@@ -1,137 +1,337 @@
-# Chorus Interview
+# 🚀 Pokémon Team Builder – Engineering Interview Submission
 
-## About this Interview
+## Overview
 
-Welcome to Chorus Engineering's Interview project!
+This project implements a full-stack Pokémon Team Builder application using a modern monorepo architecture.
 
-We're looking for engineers who are experienced, passionate, and obsessed with strong systems and high productivity.
+Users can:
 
-In order to facilitate this, we are providing an interview project that mirrors the technical stack that used
-here at Chorus.
+- View the first 150 Pokémon
+- Create profiles
+- Select up to 6 Pokémon per profile
+- Persist teams to PostgreSQL
+- Explore documented API endpoints via Swagger
 
-**You, the interviewee, have the power to decide if this is the technology that you want to work on!**
+The solution emphasizes:
 
-The goal of this interview is to identify strengths through a take home project, followed by
-a 1 hour pairing session that will extend your work by creating features together.
+- Clean architecture
+- Separation of concerns
+- Proper domain modeling
+- API documentation
+- Automated testing
+- Reproducible local development
 
-## Tech Stack
+---
 
-- React UI
-- Emotion CSS
-- Typescript
-- Node/NestJS Backend
-- NX Monorepo
-- Github Actions CI
-- PostgreSQL Database
-- Docker / Docker Desktop
+# 🏗 High-Level Architecture
 
-## Prerequisites
+```mermaid
+flowchart TB
 
-Package Manager: pnpm 8.15.8
-
-Node: 20.14.0 (LTS)
-
-Docker
-
-## Instructions
-
-### Install Preqresuites
-1. [Install nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
-
-Use this command to install node and npm comes with it.
-```bash
-nvm install --lts 
+    User -->|HTTP| Frontend["React UI - Vite & MUI"]
+    Frontend -->|REST API| Backend["NestJS API"]
+    Backend --> ServiceLayer["Service Layer"]
+    ServiceLayer --> RepositoryLayer["TypeORM Layer"]
+    RepositoryLayer --> Database[("PostgreSQL")]
 ```
 
-2. Install pnpm
-```bash
-npm i -g pnpm@8.15.8
+---
+
+# 🧱 Backend Architecture (Layered)
+
+```mermaid
+flowchart TB
+
+    Controller[Controller Layer]
+    Service[Service Layer]
+    Repository[Repository / TypeORM]
+    DB[(PostgreSQL Database)]
+
+    Controller --> Service
+    Service --> Repository
+    Repository --> DB
 ```
-3. [Install Docker / Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+The backend follows a modular, MVC-inspired layered architecture:
 
-### Getting and Running the Repository
+```
+Controller → Service → Repository → Database
+```
 
-**The Hiring Manager will send you a link to this repository.**
+- Controllers handle HTTP concerns
+- Services enforce business rules
+- TypeORM handles persistence
+- Entities represent the domain model
 
-Clone this repository, and run the commands below to get started.
+---
 
-1. Run `pnpm install`
-2. Run `pm2 start`
+# 🧩 Data Model (ERD)
 
-> Note: The API and React server will automatically watch for changes.
+```mermaid
+erDiagram
 
-You can manage start/stop using `pm2`.
+    POKEMON {
+        int id PK
+        string name
+    }
 
-Use `pm2 logs` to see the logs from all processes.
+    PROFILE {
+        int id PK
+        string name
+    }
 
-Use `pm2 stop all` to stop the servers.
+    PROFILE_POKEMON {
+        int id PK
+        int profileId FK
+        int pokemonId FK
+    }
 
-Use `pm2 delete all` to delete the entry from the pm2 process list.
+    PROFILE ||--o{ PROFILE_POKEMON : has
+    POKEMON ||--o{ PROFILE_POKEMON : assigned
+```
 
-### Connecting to the Database
-Use whatever tool you'd like to connect to the database.
+### Why an Explicit Join Entity?
 
-[We recommend DataGrip.](https://www.jetbrains.com/datagrip/)
+Instead of using a direct ManyToMany mapping, an explicit `ProfilePokemon` entity was implemented to:
 
-Here are the connection details below.
+- Allow enforcing constraints cleanly
+- Support future extensibility (e.g., team order, metadata)
+- Maintain better control over persistence
 
-- **Database**: pokemon
-- **Username**: admin
-- **Password**: admin
-- **Host**: localhost
-- **Port**: 5432
+---
 
-## Prompt
+# 🔄 Request Flow Example – Assign Team
 
-Lets make a Pokémon Team builder!
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant Repository
+    participant Database
 
-We want to create a way to select 6 Pokémon to be on our team.
+    Client->>Controller: POST /profiles/:id/team
+    Controller->>Service: validate & assign
+    Service->>Repository: persist team
+    Repository->>Database: insert rows
+    Database-->>Repository: success
+    Repository-->>Service: saved
+    Service-->>Controller: response
+    Controller-->>Client: HTTP 200
+```
 
-The UI should allow the user to:
+---
 
-1. View a list of the first 150 Pokémon
-2. Select from the list of Pokémon
-3. Submit the Pokémon that we have selected to the backend.
+# 🧠 Design Decisions
 
-**It does not have to be a beautiful UX experience. We're aiming for functional.**
+### 1. Explicit Join Table
 
-### Completion Criteria
+Provides extensibility and strong domain modeling.
 
-Database Requirements
+### 2. DTO Layer
 
-- There should be a Profile table
-- There should be a Pokémon table
-- There should be a relationship between Pokémon and Profiles.
+DTOs are used to:
 
-UI Requirements
+- Decouple API contracts from persistence models
+- Enable Swagger schema generation
+- Enforce request validation
 
-- Show a list of the first 150 Pokémon
-- Show selectable Profiles
-- Select a profile, and choose up to 6 Pokémon.
+### 3. Swagger Integration
 
-API Requirements
+Swagger provides:
 
-- Return pokemon
-- Create Profiles
-- Handle receiving Pokémon related to Profiles
+- Interactive API documentation
+- Clear endpoint visibility
+- Reviewer convenience
 
-## Submission Criteria
+Documentation available at:
 
-All of your work should be located in a Github Repo.
+```
+http://localhost:3000/api/docs
+```
 
-Ensure your repo is public, and submit the URL back to the hiring manager.
+### 4. Testcontainers
 
-### Troubleshooting
+The backend uses Testcontainers to automatically spin up PostgreSQL during development.
 
-> I can't execute pm2!
+Benefits:
 
-pm2 is part of the devDependencies, so when you install the dependencies, you should be able to
-execute the binary from node_modules.
+- No manual DB setup
+- Reproducible local environment
+- Isolated test execution
 
-Either use `pnpm pm2` or add `node_modules/.bin` to your `PATH`.
+---
 
-> The requirements are confusing. I'm stuck.
+# 🛠 Tech Stack
 
-Contact the hiring manager, and inform them of the situation. Be specific and clear about your concerns or issues.
+Backend:
+- NestJS
+- TypeORM
+- PostgreSQL
+- Swagger (OpenAPI)
+- class-validator
+- Testcontainers
 
+Frontend:
+- React (Vite)
+- Material UI
+
+Monorepo:
+- Nx
+- pnpm
+
+---
+
+# 🧪 Running the Project
+
+## 1️⃣ Install Dependencies
+
+```bash
+pnpm install
+```
+
+---
+
+## 2️⃣ Run Backend
+
+```bash
+pnpm nx serve pokemon-user-backend
+```
+
+Backend runs at:
+
+```
+http://localhost:3000/api
+```
+
+Swagger:
+
+```
+http://localhost:3000/api/docs
+```
+
+---
+
+## 3️⃣ Run Frontend
+
+In a separate terminal:
+
+```bash
+pnpm nx serve pokemon-ui
+```
+
+Frontend runs at:
+
+```
+http://localhost:4200
+```
+
+---
+
+# 🧪 Running Tests
+
+## Backend E2E Tests
+
+```bash
+pnpm nx e2e pokemon-user-backend-e2e
+```
+
+Tests validate:
+
+- Profile creation
+- Team assignment
+- Enforcement of the 6 Pokémon constraint
+
+---
+
+# 📦 Database
+
+PostgreSQL is started automatically via Testcontainers.
+
+Configuration:
+
+- Database: pokemon
+- Username: admin
+- Password: admin
+- Port: 5432
+
+No manual setup required.
+
+---
+
+# 📚 API Endpoints
+
+### GET /api/pokemon
+
+Returns the first 150 Pokémon.
+
+---
+
+### POST /api/profiles
+
+Creates a new profile.
+
+Request:
+
+```json
+{
+  "name": "Ash"
+}
+```
+
+---
+
+### POST /api/profiles/:id/team
+
+Assigns Pokémon to a profile (maximum of 6).
+
+Request:
+
+```json
+{
+  "pokemonIds": [1, 2, 3, 4, 5, 6]
+}
+```
+
+---
+
+# 🔐 Validation
+
+- Maximum of 6 Pokémon enforced
+- DTO validation enabled globally
+- Invalid input returns HTTP 400
+
+---
+
+# 🚀 Potential Extensions
+
+- Pagination for Pokémon list
+- Team slot ordering (1–6)
+- Caching layer
+- Role-based access
+- Production DB configuration
+- CI/CD pipeline
+- Containerized deployment
+
+---
+
+# 🎯 Summary
+
+This implementation demonstrates:
+
+- Clean modular NestJS architecture
+- Proper relational modeling
+- Business rule enforcement at the service layer
+- API documentation via Swagger
+- Automated E2E tests
+- Reproducible development environment
+- Structured monorepo architecture using Nx
+
+The focus was correctness, clarity, and maintainability while avoiding unnecessary complexity.
+
+---
+
+# 👤 Author
+
+Ayokunle Ade-Aina  
+Software Engineer
