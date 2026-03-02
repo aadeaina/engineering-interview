@@ -18,10 +18,16 @@ async function bootstrap() {
     process.exit();
   });
 
-   // Only start Testcontainers DB in development
-  if (process.env.NODE_ENV !== 'production') {
+  // Start Testcontainers DB only in development mode
+if (process.env.NODE_ENV === 'development') {
+  try {
     await startDatabase();
+  } catch (err) {
+    console.warn(
+      'Testcontainer DB startup failed. Ensure Docker is running.',
+    );
   }
+}
 
   const app = await NestFactory.create(AppModule);
 

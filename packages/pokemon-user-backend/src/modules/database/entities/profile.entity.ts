@@ -6,7 +6,7 @@ export class Profile {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
   @OneToMany(() => ProfilePokemon, (pp) => pp.profile)

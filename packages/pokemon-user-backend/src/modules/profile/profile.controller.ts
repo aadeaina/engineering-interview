@@ -8,21 +8,6 @@ import { CreateProfileDto,AssignTeamDto } from './profile.dto';
 @Controller('profiles')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
-    
-//   @Post()
-//   create(@Body('name') name: string) {
-//     return this.profileService.create(name);
-//   }
-
-
-//   @Post(':id/team')
-//   assignTeam(
-//     @Param('id') id: string,
-//     @Body('pokemonIds') pokemonIds: number[],
-//   ) {
-//     return this.profileService.assignTeam(Number(id), pokemonIds);
-//   }
-
   @Post()
     create(@Body() dto: CreateProfileDto) {
     return this.profileService.create(dto.name);
